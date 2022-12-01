@@ -847,15 +847,30 @@ setDocument = Sizzle.setDocument = function( node ) {
 
 			var input;
 
-			// Select is set to empty string on purpose
-			// This is to test IE's treatment of not explicitly
-			// setting a boolean content attribute,
-			// since its presence should be enough
-			// https://bugs.jquery.com/ticket/12359
-			docElem.appendChild( el ).innerHTML = "<a id='" + expando + "'></a>" +
-				"<select id='" + expando + "-\r\\' msallowcapture=''>" +
-				"<option selected=''></option></select>";
+			if ( window.trustedTypes && window.trustedTypes.createPolicy ) {
+				var expandoLink = document.createElement("a");
+				expandoLink.setAttribute("id", expando);
+				var expandoSelect = document.createElement("select");
+				expandoSelect.setAttribute("id", expando + "-\r\\");
+				expandoSelect.setAttribute("msallowcapture", "");
+				var expandoOption = document.createElement("option");
+				expandoOption.setAttribute("selected", "");
 
+				expandoSelect.appendChild(expandoOption);
+				el.appendChild(expandoLink);
+				el.appendChild(expandoSelect);
+				docElem.appendChild(el);
+			} else {
+
+				// Select is set to empty string on purpose
+				// This is to test IE's treatment of not explicitly
+				// setting a boolean content attribute,
+				// since its presence should be enough
+				// https://bugs.jquery.com/ticket/12359
+				docElem.appendChild( el ).innerHTML = "<a id='" + expando + "'></a>" +
+					"<select id='" + expando + "-\r\\' msallowcapture=''>" +
+					"<option selected=''></option></select>";
+			}
 			// Support: IE8, Opera 11-12.16
 			// Nothing should be selected when empty strings follow ^= or $= or *=
 			// The test attribute must be unknown in Opera but "safe" for WinRT
@@ -909,8 +924,22 @@ setDocument = Sizzle.setDocument = function( node ) {
 		} );
 
 		assert( function( el ) {
-			el.innerHTML = "<a href='' disabled='disabled'></a>" +
-				"<select disabled='disabled'><option/></select>";
+			if ( window.trustedTypes && window.trustedTypes.createPolicy ) {
+				var link = document.createElement("a");
+				link.setAttribute("href", "");
+				link.setAttribute("disabled", "disabled");
+
+				var option = document.createElement("option");
+				var select = document.createElement("select");
+				select.setAttribute("disabled", "disabled");
+
+				select.appendChild(option);
+				el.appendChild(link);
+				el.appendChild(select);
+			} else {
+				el.innerHTML = "<a href='' disabled='disabled'></a>" +
+					"<select disabled='disabled'><option/></select>";
+			}
 
 			// Support: Windows 8 Native Apps
 			// The type and name attributes are restricted during .innerHTML assignment
@@ -2471,32 +2500,34 @@ support.sortDetached = assert( function( el ) {
 	return el.compareDocumentPosition( document.createElement( "fieldset" ) ) & 1;
 } );
 
-// Support: IE<8
-// Prevent attribute/property "interpolation"
-// https://msdn.microsoft.com/en-us/library/ms536429%28VS.85%29.aspx
-if ( !assert( function( el ) {
-	el.innerHTML = "<a href='#'></a>";
-	return el.firstChild.getAttribute( "href" ) === "#";
-} ) ) {
-	addHandle( "type|href|height|width", function( elem, name, isXML ) {
-		if ( !isXML ) {
-			return elem.getAttribute( name, name.toLowerCase() === "type" ? 1 : 2 );
-		}
-	} );
-}
+if ( !window.trustedTypes || !window.trustedTypes.createPolicy ) {
+	// Support: IE<8
+	// Prevent attribute/property "interpolation"
+	// https://msdn.microsoft.com/en-us/library/ms536429%28VS.85%29.aspx
+	if ( !assert( function( el ) {
+		el.innerHTML = "<a href='#'></a>";
+		return el.firstChild.getAttribute( "href" ) === "#";
+	} ) ) {
+		addHandle( "type|href|height|width", function( elem, name, isXML ) {
+			if ( !isXML ) {
+				return elem.getAttribute( name, name.toLowerCase() === "type" ? 1 : 2 );
+			}
+		} );
+	}
 
-// Support: IE<9
-// Use defaultValue in place of getAttribute("value")
-if ( !support.attributes || !assert( function( el ) {
-	el.innerHTML = "<input/>";
-	el.firstChild.setAttribute( "value", "" );
-	return el.firstChild.getAttribute( "value" ) === "";
-} ) ) {
-	addHandle( "value", function( elem, _name, isXML ) {
-		if ( !isXML && elem.nodeName.toLowerCase() === "input" ) {
-			return elem.defaultValue;
-		}
-	} );
+	// Support: IE<9
+	// Use defaultValue in place of getAttribute("value")
+	if ( !support.attributes || !assert( function( el ) {
+		el.innerHTML = "<input/>";
+		el.firstChild.setAttribute( "value", "" );
+		return el.firstChild.getAttribute( "value" ) === "";
+	} ) ) {
+		addHandle( "value", function( elem, _name, isXML ) {
+			if ( !isXML && elem.nodeName.toLowerCase() === "input" ) {
+				return elem.defaultValue;
+			}
+		} );
+	}
 }
 
 // Support: IE<9

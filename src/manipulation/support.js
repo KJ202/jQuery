@@ -24,16 +24,22 @@ define( [
 	// Older WebKit doesn't clone checked state correctly in fragments
 	support.checkClone = div.cloneNode( true ).cloneNode( true ).lastChild.checked;
 
-	// Support: IE <=11 only
-	// Make sure textarea (and checkbox) defaultValue is properly cloned
-	div.innerHTML = "<textarea>x</textarea>";
-	support.noCloneChecked = !!div.cloneNode( true ).lastChild.defaultValue;
+	if ( window.trustedTypes && window.trustedTypes.createPolicy ) {
+		support.noCloneChecked = true;
+		support.option = true;
+	} else {
 
-	// Support: IE <=9 only
-	// IE <=9 replaces <option> tags with their contents when inserted outside of
-	// the select element.
-	div.innerHTML = "<option></option>";
-	support.option = !!div.lastChild;
+		// Support: IE <=11 only
+		// Make sure textarea (and checkbox) defaultValue is properly cloned
+		div.innerHTML = "<textarea>x</textarea>";
+		support.noCloneChecked = !!div.cloneNode( true ).lastChild.defaultValue;
+
+		// Support: IE <=9 only
+		// IE <=9 replaces <option> tags with their contents when inserted outside of
+		// the select element.
+		div.innerHTML = "<option></option>";
+		support.option = !!div.lastChild;
+	}
 } )();
 
 return support;
